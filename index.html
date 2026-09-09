@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feliz Cumpleaños Estelar - Mari</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #020205;
+        }
+
+        /* Lienzo de Three.js para la galaxia 3D */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Contenedor de corazones flotantes */
+        #hearts-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .floating-heart {
+            position: absolute;
+            user-select: none;
+            animation: riseHeart linear forwards;
+        }
+
+        @keyframes riseHeart {
+            0% {
+                transform: translateY(105vh) translateX(0) scale(0.5) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.9;
+            }
+            100% {
+                transform: translateY(-10vh) translateX(var(--random-x)) scale(1.6) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Cartel central flotante */
+        .birthday-card {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            text-align: center;
+            background: rgba(10, 10, 25, 0.75);
+            border: 1px solid rgba(0, 210, 255, 0.4);
+            padding: 35px 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 40px rgba(0, 210, 255, 0.25);
+            max-width: 650px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: floatCard 4s ease-in-out infinite alternate;
+        }
+
+        /* Scrollbar personalizado para el cartel */
+        .birthday-card::-webkit-scrollbar {
+            width: 6px;
+        }
+        .birthday-card::-webkit-scrollbar-thumb {
+            background: rgba(0, 210, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            color: #00d2ff;
+            text-shadow: 0 0 15px rgba(0, 210, 255, 0.6);
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        .name {
+            color: #ff758c;
+            text-shadow: 0 0 15px rgba(255, 117, 140, 0.6);
+        }
+
+        p {
+            color: #d0d0f0;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .interactive-btn {
+            background: transparent;
+            border: 2px solid #00d2ff;
+            color: #00d2ff;
+            padding: 10px 25px;
+            font-size: 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+            margin-top: 10px;
+        }
+
+        .interactive-btn:hover {
+            background: #00d2ff;
+            color: #020205;
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.8);
+            transform: scale(1.05);
+        }
+
+        /* Animación sutil de flotación para el cartel */
+        @keyframes floatCard {
+            0% { transform: translate(-50%, -52%); }
+            100% { transform: translate(-50%, -48%); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Contenedor 3D -->
+    <div id="webgl-container"></div>
+
+    <!-- Contenedor de corazones -->
+    <div id="hearts-container"></div>
+
+    <!-- Cartel de Cumpleaños -->
+    <div class="birthday-card">
+        <h1>¡Feliz Cumpleaños, <span class="name">Mari</span>!</h1>
+        
+        <p>Aprovecho esta ocasión especial para hacerte llegar mis más sinceras felicitaciones por tu cumpleaños. Es un verdadero gusto compartir el aula contigo y contar con una compañera de tu nivel de compromiso y responsabilidad. Tu dedicación en los proyectos escolares y tu actitud colaborativa aportan un gran valor a nuestro grupo de estudio.</p>
+        
+        <p>Te deseo un año lleno de salud, bienestar y grandes satisfacciones. Estoy seguro de que alcanzarás con éxito cada una de las metas académicas y profesionales que te has propuesto para esta etapa. Que pases un excelente día en compañía de tus seres queridos.</p>
+
+        <button class="interactive-btn" onclick="triggerSupernovaEffect()">✨ Activar Supernova</button>
+    </div>
+
+    <!-- Importar Three.js desde CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- CONFIGURACIÓN DE LA GALAXIA 3D CON THREE.JS ---
+        const container = document.getElementById('webgl-container');
+
+        // Escena, Cámara y Renderizador
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Parámetros de la Galaxia
+        const parameters = {
+            count: 15000,
+            size: 0.015,
+            radius: 5,
+            branches: 4,
+            spin: 1,
+            randomness: 0.5,
+            randomnessPower: 3,
+            insideColor: '#ff6030',
+            outsideColor: '#1b3984'
+        };
+
+        let galaxyGeometry = null;
+        let galaxyMaterial = null;
+        let points = null;
+
+        const generateGalaxy = () => {
+            if (points) {
+                scene.remove(points);
+                galaxyGeometry.dispose();
+                galaxyMaterial.dispose();
+            }
+
+            // Geometría
+            galaxyGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(parameters.count * 3);
+            const colors = new Float32Array(parameters.count * 3);
+
+            const colorInside = new THREE.Color(parameters.insideColor);
+            const colorOutside = new THREE.Color(parameters.outsideColor);
+
+            for (let i = 0; i < parameters.count; i++) {
+                // Posición
+                const i3 = i * 3;
+                const radius = Math.random() * parameters.radius;
+                const spinAngle = radius * parameters.spin;
+                const branchAngle = ((i % parameters.branches) / parameters.branches) * Math.PI * 2;
+
+                const randomX = Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * parameters.randomness * radius;
+                const randomY = Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * parameters.randomness * radius;
+                const randomZ = Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * parameters.randomness * radius;
+
+                positions[i3] = Math.cos(branchAngle + spinAngle) * radius + randomX;
+                positions[i3 + 1] = randomY;
+                positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+                // Color interpolado
+                const mixedColor = colorInside.clone();
+                mixedColor.lerp(colorOutside, radius / parameters.radius);
+
+                colors[i3] = mixedColor.r;
+                colors[i3 + 1] = mixedColor.g;
+                colors[i3 + 2] = mixedColor.b;
+            }
+
+            galaxyGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            galaxyGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            // Material
+            galaxyMaterial = new THREE.PointsMaterial({
+                size: parameters.size,
+                sizeAttenuation: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending,
+                vertexColors: true
+            });
+
+            points = new THREE.Points(galaxyGeometry, galaxyMaterial);
+            scene.add(points);
+        };
+
+        generateGalaxy();
+
+        camera.position.x = 0;
+        camera.position.y = 3;
+        camera.position.z = 5;
+        camera.lookAt(0, 0, 0);
+
+        // Animación de rotación de la galaxia
+        const clock = new THREE.Clock();
+
+        const animate = () => {
+            const elapsedTime = clock.getElapsedTime();
+
+            if (points) {
+                points.rotation.y = elapsedTime * 0.05; // Velocidad de giro de la galaxia
+            }
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        };
+
+        animate();
+
+        // Ajustar tamaño al cambiar ventana
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Efecto interactivo al presionar el botón (Supernova + Lluvia masiva de corazones)
+        function triggerSupernovaEffect() {
+            // Acelerar galaxia temporalmente
+            parameters.size = 0.03;
+            parameters.spin = 3;
+            generateGalaxy();
+            
+            setTimeout(() => {
+                parameters.size = 0.015;
+                parameters.spin = 1;
+                generateGalaxy();
+            }, 1000);
+
+            // Generar una lluvia masiva de corazones (80 unidades)
+            const heartsContainer = document.getElementById('hearts-container');
+            for (let i = 0; i < 80; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'floating-heart';
+                
+                // Variar entre diferentes emojis de corazones y destellos para darle más dinamismo
+                const icons = ['💖', '✨', '💗', '⭐', '💓', '💫'];
+                heart.innerHTML = icons[Math.floor(Math.random() * icons.length)];
+                
+                // Posición horizontal aleatoria en toda la pantalla
+                heart.style.left = Math.random() * 100 + 'vw';
+                
+                // Desplazamiento horizontal aleatorio durante el ascenso
+                const randomX = (Math.random() - 0.5) * 300 + 'px';
+                heart.style.setProperty('--random-x', randomX);
+                
+                // Variación en la duración y tamaño
+                heart.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+                heart.style.fontSize = (1 + Math.random() * 1.8) + 'rem';
+                
+                // Retardo aleatorio para que salgan en oleadas continuas
+                heart.style.animationDelay = (Math.random() * 0.5) + 's';
+
+                heartsContainer.appendChild(heart);
+
+                // Limpiar del DOM al terminar la animación
+                setTimeout(() => {
+                    heart.remove();
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>
